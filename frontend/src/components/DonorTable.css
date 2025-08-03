@@ -1,0 +1,98 @@
+
+.donortable-container {
+  background-color: hsl(var(--card));
+  color: hsl(var(--foreground));
+  padding: 1.5rem;
+  border-radius: 1rem;
+  box-shadow: var(--shadow-card);
+}
+
+.donortable-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.donortable-title {
+  font-size: 1.5rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.donortable-wrapper {
+  overflow-x: auto;
+}
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.table-head {
+  background-color: hsl(var(--muted));
+}
+
+.table-header-cell {
+  padding: 0.75rem 1rem;
+  text-align: left;
+  font-weight: 600;
+  color: hsl(var(--muted-foreground));
+}
+
+.table-body tr:nth-child(even) {
+  background-color: hsl(var(--background));
+}
+
+.table-row:hover {
+  background-color: hsl(var(--muted));
+}
+
+.table-cell {
+  padding: 1rem;
+  vertical-align: middle;
+}
+
+.donor-name {
+  font-weight: 500;
+}
+
+.status-badge {
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  text-transform: capitalize;
+}
+
+.status-pending {
+  background-color: hsl(var(--warm-orange) / 0.2);
+  color: hsl(var(--warm-orange));
+}
+
+.status-warning {
+  background-color: hsl(var(--accent) / 0.2);
+  color: hsl(var(--accent));
+}
+
+.status-completed {
+  background-color: hsl(var(--fresh-green) / 0.2);
+  color: hsl(var(--fresh-green));
+}
+
+.status-default {
+  background-color: hsl(var(--muted));
+  color: hsl(var(--muted-foreground));
+}
+
+.location-cell {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.location-icon {
+  color: hsl(var(--community-blue));
+}
