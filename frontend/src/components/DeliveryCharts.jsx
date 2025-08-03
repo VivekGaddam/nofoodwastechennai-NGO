@@ -1,7 +1,7 @@
 import React from 'react';
 import { TrendingUp, Calendar, PieChart as PieChartIcon } from 'lucide-react';
 import { motion } from 'framer-motion';
-import "./deliverycharts.css"
+import "./DeliveryCharts.css"
 
 const DeliveryCharts = ({ monthlyData, weeklyData, foodTypeData }) => {
   return (
