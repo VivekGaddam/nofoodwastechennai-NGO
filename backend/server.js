@@ -20,7 +20,7 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 
 app.use(cors({
-  origin: '*', // Frontend port
+  origin: 'https://nofoodwastechennainngo.onrender.com', // Frontend port
   credentials: true, // Must be true for cookies to be accepted
 }));
 app.use(express.json());
