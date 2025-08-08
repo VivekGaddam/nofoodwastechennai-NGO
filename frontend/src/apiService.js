@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_URL = 'https://nofoodwastechennai-ngo.onrender.com/api'; // Assuming your backend runs on port 5000
+const API_URL = 'https://nofoodwastechennainngo.onrender.com/api'; // Assuming your backend runs on port 5000
 
 const apiService = axios.create({
   baseURL: API_URL,
