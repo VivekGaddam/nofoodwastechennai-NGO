@@ -12,9 +12,15 @@ import { useEffect } from 'react';
 
 function App() {
   useEffect(() => {
-    localStorage.setItem('user', JSON.stringify({}));
-    localStorage.setItem('token', '');
-    localStorage.setItem('admin', JSON.stringify({}));
+    if (!localStorage.getItem('user')) {
+      localStorage.setItem('user', JSON.stringify({}));
+    }
+    if (!localStorage.getItem('token')) {
+      localStorage.setItem('token', '');
+    }
+    if (!localStorage.getItem('admin')) {
+      localStorage.setItem('admin', JSON.stringify({}));
+    }
   }, []);
 
   return (  
