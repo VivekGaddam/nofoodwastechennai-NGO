@@ -31,19 +31,39 @@ exports.registerVolunteer = async (req, res) => {
 
     await newUser.save();
 
-    const token = generateToken({ id: newUser._id, role: newUser.role });
+    const token = generateToken({
+      id: newUser._id,
+      name: newUser.name,
+      email: newUser.email,
+      phone: newUser.phone,
+      role: newUser.role,
+      isVerified: newUser.isVerified,
+      location: newUser.location,
+      available: newUser.location?.available || true,
+    });
+
     res.cookie("token", token, {
       httpOnly: true,
-      secure: true,            // Force HTTPS for SameSite=None
-      sameSite: "None",        // Allow cross-origin cookie sharing
+      secure: true,
+      sameSite: "None",
       maxAge: 7 * 24 * 60 * 60 * 1000,
     });
-    return res
-      .status(201)
-      .json({ message: "Volunteer registered successfully" });
+
+    return res.status(201).json({
+      message: "Volunteer registered successfully",
+      token,
+      user: {
+        id: newUser._id,
+        name: newUser.name,
+        email: newUser.email,
+        phone: newUser.phone,
+        role: newUser.role,
+        isVerified: newUser.isVerified,
+        location: newUser.location,
+      },
+    });
   } catch (err) {
     console.error("❌ Error in registerVolunteer:", err.message);
-    console.error(err.stack);
     return res.status(500).json({ error: "Internal server error" });
   }
 };
@@ -51,8 +71,7 @@ exports.registerVolunteer = async (req, res) => {
 // Donor Registration
 exports.registerDonor = async (req, res) => {
   try {
-    const { name, email, phone, password, address, latitude, longitude } =
-      req.body;
+    const { name, email, phone, password, address, latitude, longitude } = req.body;
 
     const existing = await User.findOne({ email });
     if (existing)
@@ -76,28 +95,49 @@ exports.registerDonor = async (req, res) => {
 
     await newUser.save();
 
-    const token = generateToken(newUser);
+    const token = generateToken({
+      id: newUser._id,
+      name: newUser.name,
+      email: newUser.email,
+      phone: newUser.phone,
+      role: newUser.role,
+      isVerified: newUser.isVerified,
+      location: newUser.location,
+      available: newUser.location?.available || true,
+    });
+
     res.cookie("token", token, {
       httpOnly: true,
-      secure: true,            // Force HTTPS for SameSite=None
-      sameSite: "None",        // Allow cross-origin cookie sharing
+      secure: true,
+      sameSite: "None",
       maxAge: 7 * 24 * 60 * 60 * 1000,
     });
-    return res.status(201).json({ message: "Donor registered successfully" });
+
+    return res.status(201).json({
+      message: "Donor registered successfully",
+      token,
+      user: {
+        id: newUser._id,
+        name: newUser.name,
+        email: newUser.email,
+        phone: newUser.phone,
+        role: newUser.role,
+        isVerified: newUser.isVerified,
+        location: newUser.location,
+      },
+    });
   } catch (err) {
     console.error("❌ Error in registerDonor:", err.message);
-    console.error(err.stack);
     return res.status(500).json({ error: "Internal server error" });
   }
 };
 
+// User Login
 exports.loginUser = async (req, res) => {
   try {
     const { email, password } = req.body;
-    if (
-      email === process.env.ADMIN_EMAIL &&
-      password === process.env.ADMIN_PASSWORD
-    ) {
+
+    if (email === process.env.ADMIN_EMAIL && password === process.env.ADMIN_PASSWORD) {
       const token = generateToken({
         id: process.env.ADMIN_ID,
         role: "admin",
@@ -105,33 +145,52 @@ exports.loginUser = async (req, res) => {
 
       res.cookie("token", token, {
         httpOnly: true,
-        secure: true,            // Force HTTPS for SameSite=None
-        sameSite: "None",        // Allow cross-origin cookie sharing
+        secure: true,
+        sameSite: "None",
         maxAge: 7 * 24 * 60 * 60 * 1000,
       });
 
       return res.json({ token, role: "admin", name: "Admin" });
     }
 
-    // Check normal user login
     const user = await User.findOne({ email });
     if (!user) return res.status(401).json({ error: "Invalid credentials" });
 
     const isMatch = await comparePassword(password, user.passwordHash);
     if (!isMatch) return res.status(401).json({ error: "Invalid credentials" });
 
-    // Generate token for regular user
-    const token = generateToken(user);
+    const token = generateToken({
+      id: user._id,
+      name: user.name,
+      email: user.email,
+      phone: user.phone,
+      role: user.role,
+      isVerified: user.isVerified,
+      location: user.location,
+      available: user.location?.available || true,
+    });
+
     res.cookie("token", token, {
       httpOnly: true,
-      secure: true,            // Force HTTPS for SameSite=None
-      sameSite: "None",        // Allow cross-origin cookie sharing
+      secure: true,
+      sameSite: "None",
       maxAge: 7 * 24 * 60 * 60 * 1000,
     });
-    return res.json({ role: user.role, name: user.name });
+
+    return res.json({
+      token,
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        phone: user.phone,
+        role: user.role,
+        isVerified: user.isVerified,
+        location: user.location,
+      },
+    });
   } catch (err) {
     console.error("❌ Error in loginUser:", err.message);
-    console.error(err.stack);
     return res.status(500).json({ error: "Internal server error" });
   }
 };
@@ -147,24 +206,14 @@ exports.forgotPassword = async (req, res) => {
       return res.status(404).json({ error: "User not found" });
     }
 
-    // Generate reset token
     const resetToken = crypto.randomBytes(20).toString("hex");
-    user.resetPasswordToken = crypto
-      .createHash("sha256")
-      .update(resetToken)
-      .digest("hex");
+    user.resetPasswordToken = crypto.createHash("sha256").update(resetToken).digest("hex");
     user.resetPasswordExpire = Date.now() + 3600000; // 1 hour
 
     await user.save();
 
-    // Create reset URL
-    const resetURL = `${req.protocol}://${req.get(
-      "host"
-    )}/api/auth/resetpassword/${resetToken}`;
-
-    const message = `You have requested a password reset. Please make a PUT request to: 
-
- ${resetURL}`;
+    const resetURL = `${req.protocol}://${req.get("host")}/api/auth/resetpassword/${resetToken}`;
+    const message = `You have requested a password reset. Please make a PUT request to: \n\n${resetURL}`;
 
     try {
       await sendEmail({
@@ -183,7 +232,6 @@ exports.forgotPassword = async (req, res) => {
     }
   } catch (err) {
     console.error("❌ Error in forgotPassword:", err.message);
-    console.error(err.stack);
     return res.status(500).json({ error: "Internal server error" });
   }
 };
@@ -214,7 +262,6 @@ exports.resetPassword = async (req, res) => {
     res.status(200).json({ message: "Password reset successful" });
   } catch (err) {
     console.error("❌ Error in resetPassword:", err.message);
-    console.error(err.stack);
     return res.status(500).json({ error: "Internal server error" });
   }
 };
