@@ -34,9 +34,9 @@ exports.registerVolunteer = async (req, res) => {
     const token = generateToken({ id: newUser._id, role: newUser.role });
     res.cookie("token", token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "Lax",
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      secure: true,            // Force HTTPS for SameSite=None
+      sameSite: "None",        // Allow cross-origin cookie sharing
+      maxAge: 7 * 24 * 60 * 60 * 1000,
     });
     return res
       .status(201)
@@ -79,9 +79,9 @@ exports.registerDonor = async (req, res) => {
     const token = generateToken(newUser);
     res.cookie("token", token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "Lax",
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      secure: true,            // Force HTTPS for SameSite=None
+      sameSite: "None",        // Allow cross-origin cookie sharing
+      maxAge: 7 * 24 * 60 * 60 * 1000,
     });
     return res.status(201).json({ message: "Donor registered successfully" });
   } catch (err) {
@@ -105,8 +105,8 @@ exports.loginUser = async (req, res) => {
 
       res.cookie("token", token, {
         httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "Lax",
+        secure: true,            // Force HTTPS for SameSite=None
+        sameSite: "None",        // Allow cross-origin cookie sharing
         maxAge: 7 * 24 * 60 * 60 * 1000,
       });
 
@@ -124,9 +124,9 @@ exports.loginUser = async (req, res) => {
     const token = generateToken(user);
     res.cookie("token", token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "Lax",
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      secure: true,            // Force HTTPS for SameSite=None
+      sameSite: "None",        // Allow cross-origin cookie sharing
+      maxAge: 7 * 24 * 60 * 60 * 1000,
     });
     return res.json({ role: user.role, name: user.name });
   } catch (err) {
