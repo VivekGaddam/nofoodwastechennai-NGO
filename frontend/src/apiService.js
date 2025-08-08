@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_URL = 'https://nofoodwastechennai-ngo.onrender.com/api'; // Assuming your backend runs on port 5000
+const API_URL = 'http://localhost:5000/api'; // Assuming your backend runs on port 5000
 
 const apiService = axios.create({
   baseURL: API_URL,
@@ -14,7 +14,7 @@ export const registerUser = (userData) => apiService.post('/auth/register', user
 export const loginUser = (userData) => apiService.post('/auth/login', userData);
 export const registerDonor = (userData) => apiService.post('/auth/register-donor', userData);
 
-// Donation Endpoints
+
 export const createDonation = (donationData) => {
   return apiService.post('/donations', donationData);
 };

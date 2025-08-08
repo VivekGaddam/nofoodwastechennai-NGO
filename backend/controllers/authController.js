@@ -34,6 +34,9 @@ exports.registerVolunteer = async (req, res) => {
     const token = generateToken({ id: newUser._id, role: newUser.role });
     res.cookie("token", token, {
       httpOnly: true,
+      secure: true, // Force HTTPS for SameSite=None
+      sameSite: "None", // Allow cross-origin cookie sharing
+      maxAge: 7 * 24 * 60 * 60 * 1000,
       secure: true,            // Force HTTPS for SameSite=None
       sameSite: "None",        // Allow cross-origin cookie sharing
       maxAge: 7 * 24 * 60 * 60 * 1000,
@@ -76,9 +79,21 @@ exports.registerDonor = async (req, res) => {
 
     await newUser.save();
 
-    const token = generateToken(newUser);
+    const token = generateToken({
+      id: newUser._id,
+      name: newUser.name,
+      email: newUser.email,
+      phone: newUser.phone,
+      role: newUser.role,
+      isVerified: newUser.isVerified,
+      location: newUser.location,
+      available: newUser.location?.available || true,
+    });
     res.cookie("token", token, {
       httpOnly: true,
+      secure: true, // Force HTTPS for SameSite=None
+      sameSite: "None", // Allow cross-origin cookie sharing
+      maxAge: 7 * 24 * 60 * 60 * 1000,
       secure: true,            // Force HTTPS for SameSite=None
       sameSite: "None",        // Allow cross-origin cookie sharing
       maxAge: 7 * 24 * 60 * 60 * 1000,
@@ -105,6 +120,8 @@ exports.loginUser = async (req, res) => {
 
       res.cookie("token", token, {
         httpOnly: true,
+        secure: true, // Force HTTPS for SameSite=None
+        sameSite: "None", // Allow cross-origin cookie sharing
         secure: true,            // Force HTTPS for SameSite=None
         sameSite: "None",        // Allow cross-origin cookie sharing
         maxAge: 7 * 24 * 60 * 60 * 1000,
@@ -121,9 +138,21 @@ exports.loginUser = async (req, res) => {
     if (!isMatch) return res.status(401).json({ error: "Invalid credentials" });
 
     // Generate token for regular user
-    const token = generateToken(user);
+    const token = generateToken({
+      id: user._id,
+      name: user.name,
+      email: user.email,
+      phone: user.phone,
+      role: user.role,
+      isVerified: user.isVerified,
+      location: user.location,
+      available: user.location?.available || true,
+    });
     res.cookie("token", token, {
       httpOnly: true,
+      secure: true, // Force HTTPS for SameSite=None
+      sameSite: "None", // Allow cross-origin cookie sharing
+      maxAge: 7 * 24 * 60 * 60 * 1000,
       secure: true,            // Force HTTPS for SameSite=None
       sameSite: "None",        // Allow cross-origin cookie sharing
       maxAge: 7 * 24 * 60 * 60 * 1000,
