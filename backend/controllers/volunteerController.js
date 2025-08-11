@@ -5,8 +5,7 @@ const VolunteerAssignmentLog = require('../models/VolunteerAssignmentLog');
 exports.getMyTasks = async (req, res) => {
   try {
     const tasks = await DonationRequest.find({ assignedVolunteer: req.user._id })
-      .populate('deliveredTo'); // Populate the HungerSpot details
-
+      .populate('deliveredTo'); 
     const tasksWithMapLinks = tasks.map(task => {
       if (task.deliveredTo && task.deliveredTo.location && task.deliveredTo.location.coordinates) {
         const [longitude, latitude] = task.deliveredTo.location.coordinates;
@@ -17,6 +16,9 @@ exports.getMyTasks = async (req, res) => {
       return task.toObject();
     });
 
+
+
+    
     res.json(tasksWithMapLinks);
   } catch (error) {
     console.error(error); // Log the error for debugging

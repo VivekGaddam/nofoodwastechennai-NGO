@@ -1,87 +1,85 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Heart, Users } from 'lucide-react';
 import DonorTable from './DonorTable';
 import DeliveryCharts from './DeliveryCharts';
 import VolunteerResources from './VolunteerResources';
-import StatsCards from './StatsCards';
+// import StatsCards from './StatsCards';
 import VolunteerTasks from './VolunteerTasks';
 import './Dashboard.css';
 
+// Import your API service functions
 import {
-  donorData,
-  monthlyDeliveries,
-  volunteerFAQs,
-  weeklyDeliveries,
-  foodTypeDistribution,
-} from '../data/SampleData';
-
-const volunteerTasks = [
-  {
-    _id: "6860b3942f5c715918c04d23",
-    donorId: "68607d331d3c08312f9e1889",
-    donorName: "Test Donor",
-    donorPhone: "9876543210",
-    foodDescription: "Veg Biryani",
-    quantity: 30,
-    type: "veg",
-    pickupAddress: "Madhura Nagar, Kamareddy",
-    location: {
-      type: "Point",
-      coordinates: [78.4483, 17.4375],
-    },
-    preferredPickupTime: "2025-06-28T13:30:00.000+00:00",
-    expiryTime: "2025-06-28T15:00:00.000+00:00",
-    images: ["https://example.com/image1.jpg"],
-    status: "pending",
-    createdAt: "2025-06-29T03:31:32.265+00:00",
-    __v: 0,
-  },
-  {
-    _id: "6860b4732f5c715918c04d26",
-    donorId: "68607d331d3c08312f9e1889",
-    donorName: "Test Donor",
-    donorPhone: "9876543210",
-    foodDescription: "Veg Biryani",
-    quantity: 30,
-    type: "veg",
-    pickupAddress: "Madhura Nagar, Kamareddy",
-    location: {
-      type: "Point",
-      coordinates: [78.4483, 17.4375],
-    },
-    preferredPickupTime: "2025-06-28T13:30:00.000+00:00",
-    expiryTime: "2025-06-28T15:00:00.000+00:00",
-    images: ["https://example.com/image2.jpg"],
-    status: "accepted",
-    assignedVolunteer: "68607d331d3c08312f9e1889",
-    createdAt: "2025-06-29T03:35:15.971+00:00",
-    __v: 0,
-  },
-  {
-    _id: "6860b52b2f5c715918c04d2c",
-    donorId: "68607d331d3c08312f9e1889",
-    donorName: "Test Donor",
-    donorPhone: "9876543210",
-    foodDescription: "Veg Biryani",
-    quantity: 30,
-    type: "veg",
-    pickupAddress: "Madhura Nagar, Kamareddy",
-    location: {
-      type: "Point",
-      coordinates: [78.4483, 17.4375],
-    },
-    preferredPickupTime: "2025-06-28T13:30:00.000+00:00",
-    expiryTime: "2025-06-28T15:00:00.000+00:00",
-    images: ["https://example.com/image3.jpg"],
-    status: "accepted",
-    assignedVolunteer: "6860afc514723031fefd1993",
-    createdAt: "2025-06-29T03:38:19.024+00:00",
-    __v: 0,
-  }
-];
+  getMyTasks,
+  totalDeliveries,
+  getMyDonations,
+} from '../apiService';
 
 const Dashboard = () => {
-  const totalDeliveries = 127;
+  const [user, setUser] = useState(null);
+  const [donorData, setDonorData] = useState([]);
+  const [monthlyDeliveries, setMonthlyDeliveries] = useState([]);
+  const [weeklyDeliveries, setWeeklyDeliveries] = useState([]);
+  const [foodTypeDistribution, setFoodTypeDistribution] = useState([]);
+  const [volunteerTasks, setVolunteerTasks] = useState([]);
+  const [volunteerFAQs, setVolunteerFAQs] = useState([]);
+  const [deliveriesCount, setDeliveriesCount] = useState(0);
+
+  // Load logged-in user
+  useEffect(() => {
+    const userData = localStorage.getItem('user');
+    if (userData) {
+      setUser(JSON.parse(userData));
+    }
+  }, []);
+
+  // Fetch all dashboard data
+  useEffect(() => {
+    const fetchDashboardData = async () => {
+      try {
+        // Get volunteer tasks
+        const tasksRes = await getMyTasks();
+        setVolunteerTasks(tasksRes.data || []);
+
+        // Get total deliveries
+        const totalRes = await totalDeliveries();
+        setDeliveriesCount(totalRes.data?.total || 0);
+
+        // Get my donations (assuming donors are linked to deliveries)
+        const donationsRes = await getMyDonations();
+        setDonorData(donationsRes.data || []);
+
+        // TODO: Replace with backend endpoints for charts if available
+        // For now, mock chart data from donations
+        const monthlyDataMock = [
+          { month: 'Jan', count: 10 },
+          { month: 'Feb', count: 15 },
+          { month: 'Mar', count: 20 },
+        ];
+        const weeklyDataMock = [
+          { week: 'Week 1', count: 5 },
+          { week: 'Week 2', count: 7 },
+        ];
+        const foodTypeMock = [
+          { type: 'Veg', count: 12 },
+          { type: 'Non-Veg', count: 8 },
+        ];
+        setMonthlyDeliveries(monthlyDataMock);
+        setWeeklyDeliveries(weeklyDataMock);
+        setFoodTypeDistribution(foodTypeMock);
+
+        // Mock FAQs — replace with API if you have one
+        setVolunteerFAQs([
+          { question: 'How do I accept a task?', answer: 'Go to your tasks and click accept.' },
+          { question: 'What should I do if food is spoiled?', answer: 'Report immediately to admin.' },
+        ]);
+
+      } catch (error) {
+        console.error('Error loading dashboard data:', error);
+      }
+    };
+
+    fetchDashboardData();
+  }, []);
 
   return (
     <div className="dashboard-container">
@@ -101,7 +99,7 @@ const Dashboard = () => {
           </div>
           <div className="dashboard-welcome">
             <Users className="icon-small" />
-            <span>Welcome back, Volunteer!</span>
+            <span>Welcome back, {user ? user.name : 'Volunteer'}!</span>
           </div>
         </div>
       </header>
@@ -109,21 +107,21 @@ const Dashboard = () => {
       {/* Main Content */}
       <main className="dashboard-main">
         {/* Stats */}
-        <section className="dashboard-section col-span-1 md:col-span-2 lg:col-span-3">
-          <StatsCards donorData={donorData} totalDeliveries={totalDeliveries} />
-        </section>
+        {/* <section className="dashboard-section col-span-1 md:col-span-2 lg:col-span-3">
+          <StatsCards donorData={donorData} totalDeliveries={deliveriesCount} />
+        </section> */}
 
         {/* Volunteer Tasks */}
         <section className="dashboard-section col-span-1 md:col-span-2 lg:col-span-3">
-          <VolunteerTasks tasks={volunteerTasks} />
+          <VolunteerTasks tasks={volunteerTasks} volunteerId={user ? user._id : null} />
         </section>
 
         {/* Charts */}
         <section className="dashboard-section col-span-1 md:col-span-2 lg:col-span-3">
           <DeliveryCharts
-            monthlyData={monthlyDeliveries ?? []}
-            weeklyData={weeklyDeliveries ?? []}
-            foodTypeData={foodTypeDistribution ?? []}
+            monthlyData={monthlyDeliveries}
+            weeklyData={weeklyDeliveries}
+            foodTypeData={foodTypeDistribution}
           />
         </section>
 

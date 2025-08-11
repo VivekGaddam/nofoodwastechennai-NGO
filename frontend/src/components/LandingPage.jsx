@@ -170,6 +170,19 @@ const LandingPage = () => {
                 <Users className="w-5 h-5" />
               </motion.a>
             </motion.div>
+            <div className="mt-4 flex justify-center">
+  <motion.a 
+    href="https://wa.me/15551810618"
+    target="_blank"
+    rel="noopener noreferrer"
+    className="bg-green-500 hover:bg-green-600 text-white text-lg px-6 py-3 rounded-full flex items-center gap-2 shadow-lg transition-all duration-300"
+    whileHover={{ scale: 1.05 }}
+    whileTap={{ scale: 0.95 }}
+  >
+    OR message this WhatsApp bot to Donate Food Now
+    <ArrowRight className="w-5 h-5" />
+  </motion.a>
+</div>
           </motion.div>
         </div>
 
@@ -185,6 +198,7 @@ const LandingPage = () => {
           transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
         />
       </section>
+
 
       {/* Stats Section */}
       <section className="py-16 bg-muted/30">

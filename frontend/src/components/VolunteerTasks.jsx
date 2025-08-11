@@ -1,141 +1,91 @@
-import React, { useState } from 'react';
-import { CheckCircle, MapPin, Clock, Phone } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
-import './VolunteerTasks.css';
+import React, { useState, useEffect } from "react";
 
 const VolunteerTasks = ({ tasks }) => {
   const [taskList, setTaskList] = useState(tasks ?? []);
 
-  const handleAcceptTask = (taskId) => {
-    const updated = taskList.map((task) =>
-      task._id === taskId ? { ...task, status: 'accepted' } : task
-    );
-    setTaskList(updated);
+  // Sync with parent prop updates
+  useEffect(() => {
+    setTaskList(tasks ?? []);
+  }, [tasks]);
+
+  const handleAccept = (id) => {
+    console.log("Accepted task:", id);
+    // TODO: Call API to accept task
   };
 
-  const handleCompleteTask = (taskId) => {
-    const updated = taskList.map((task) =>
-      task._id === taskId ? { ...task, status: 'completed' } : task
-    );
-    setTaskList(updated);
+  const handleReject = (id) => {
+    console.log("Rejected task:", id);
+    // TODO: Call API to reject task
   };
 
-  if (!taskList || taskList.length === 0) {
-    return (
-      <motion.div 
-        className="volunteer-tasks-container"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-      >
-        <h2 className="section-title">Available Tasks</h2>
-        <p className="empty-state">No tasks assigned yet.</p>
-      </motion.div>
-    );
+  if (!taskList.length) {
+    return <p className="text-gray-500">No tasks assigned yet.</p>;
   }
 
   return (
-    <motion.div 
-      className="volunteer-tasks-container"
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5 }}
-    >
-      <h2 className="section-title">Available Tasks</h2>
-      <div className="tasks-grid">
-        <AnimatePresence>
-          {taskList.map((task, index) => {
-            const isActive = task.status === 'pending' || task.status === 'accepted';
-            const [lng, lat] = task.location?.coordinates ?? [];
-
-            return (
-              <motion.div
-                key={task._id}
-                className="task-card"
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: 20 }}
-                transition={{ duration: 0.5, delay: index * 0.1 }}
-                whileHover={{ scale: 1.02 }}
-                layout
+    <div className="grid gap-4 md:grid-cols-2">
+      {taskList.map((task) => {
+        // Ensure correct lat/lng order
+        const [lng, lat] = task.location?.coordinates ?? [];
+        return (
+          <div
+            key={task._id}
+            className="bg-white shadow-md rounded-lg p-4 border border-gray-200"
+          >
+            <h3 className="text-lg font-semibold text-gray-800">
+              {task.foodDetails?.foodType || "Food Item"}
+            </h3>
+            <p className="text-sm text-gray-600">
+              Quantity: {task.foodDetails?.quantity || "N/A"}
+            </p>
+            <p className="text-sm text-gray-600">
+              Status:{" "}
+              <span
+                className={`font-medium ${
+                  task.status === "pending"
+                    ? "text-yellow-500"
+                    : task.status === "accepted"
+                    ? "text-green-500"
+                    : "text-red-500"
+                }`}
               >
-                <div className="task-header">
-                  <h3 className="task-food">{task.foodDescription}</h3>
-                  <span className={`task-status task-status-${task.status}`}>
-                    {task.status}
-                  </span>
-                </div>
-                
-                <div className="task-details">
-                  <div className="task-detail">
-                    <Phone className="task-icon" />
-                    <span>{task.donorName} - {task.donorPhone}</span>
-                  </div>
-                  
-                  <div className="task-detail">
-                    <MapPin className="task-icon" />
-                    <span>{task.pickupAddress}</span>
-                  </div>
-                  
-                  <div className="task-detail">
-                    <Clock className="task-icon" />
-                    <span>Pickup: {new Date(task.preferredPickupTime).toLocaleString()}</span>
-                  </div>
-                  
-                  <div className="task-quantity">
-                    Serves: {task.quantity} people
-                  </div>
-                </div>
-                
-                <div className="task-actions">
-                  {isActive ? (
-                    <div className="action-buttons">
-                      {lat && lng && (
-                        <motion.a
-                          href={`https://www.google.com/maps?q=${lat},${lng}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="btn-outline btn-small"
-                          whileHover={{ scale: 1.05 }}
-                          whileTap={{ scale: 0.95 }}
-                        >
-                          <MapPin className="btn-icon" />
-                          View Map
-                        </motion.a>
-                      )}
-                      
-                      {task.status === 'pending' && (
-                        <motion.button 
-                          className="btn-primary btn-small"
-                          onClick={() => handleAcceptTask(task._id)}
-                          whileHover={{ scale: 1.05 }}
-                          whileTap={{ scale: 0.95 }}
-                        >
-                          Accept Task
-                        </motion.button>
-                      )}
-                      
-                      {task.status === 'accepted' && (
-                        <motion.button 
-                          className="btn-secondary btn-small"
-                          onClick={() => handleCompleteTask(task._id)}
-                          whileHover={{ scale: 1.05 }}
-                          whileTap={{ scale: 0.95 }}
-                        >
-                          <CheckCircle className="btn-icon" />
-                          Mark Complete
-                        </motion.button>
-                      )}
-                    </div>
-                  ) : (
-                    <span className="task-completed">✓ Completed</span>
-                  )}
-                </div>
-              </motion.div>
-            );
-          })}
-        </AnimatePresence>
-      </div>
-    </motion.div>
+                {task.status}
+              </span>
+            </p>
+
+            {/* Location link */}
+            {lat && lng && (
+              <a
+                href={`https://www.google.com/maps?q=${lat},${lng}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-blue-500 hover:underline text-sm block mt-2"
+              >
+                View Location
+              </a>
+            )}
+
+            {/* Action buttons */}
+            {task.status === "pending" && (
+              <div className="flex gap-2 mt-3">
+                <button
+                  onClick={() => handleAccept(task._id)}
+                  className="px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600"
+                >
+                  Accept
+                </button>
+                <button
+                  onClick={() => handleReject(task._id)}
+                  className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600"
+                >
+                  Reject
+                </button>
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
   );
 };
 

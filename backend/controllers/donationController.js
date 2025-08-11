@@ -39,97 +39,87 @@ exports.createDonation = async (req, res) => {
             preferredPickupTime,
             expiryTime,
             images,
-            status: 'pending' // Default status
+            status: 'pending'
         });
 
         await newDonationRequest.save();
 
-        // 2. Find nearby and available volunteers
-        // We'll search for volunteers within a reasonable radius, then filter by availability
+        // Find nearby volunteers...
         const potentialVolunteers = await User.aggregate([
             {
                 $geoNear: {
                     near: { type: 'Point', coordinates: location.coordinates },
-                    distanceField: 'distanceToDonation', // distance in meters
+                    distanceField: 'distanceToDonation',
                     spherical: true,
-                    maxDistance: 20000, // Example: 20 km radius to find initial candidates
-                    query: { role: 'volunteer', available: true } // Only available volunteers
+                    maxDistance: 20000,
+                    query: { role: 'volunteer', available: true }
                 }
             },
-            {
-                $sort: { distanceToDonation: 1 } // Sort by closest volunteer first
-            },
-            {
-                $limit: 10 // Limit to a few closest candidates
-            }
+            { $sort: { distanceToDonation: 1 } },
+            { $limit: 10 }
         ]);
 
         let assignedVolunteer = null;
         let assignedHungerSpot = null;
-        let bestOverallTime = Infinity; // To track the best possible delivery time
+        let bestOverallTime = Infinity;
 
-        // Iterate through potential volunteers to find the best match
         for (const volunteer of potentialVolunteers) {
             const volunteerPickupTime = (volunteer.distanceToDonation / AVERAGE_SPEED_METERS_PER_MINUTE) + PICKUP_BUFFER_MINUTES;
+            if (volunteerPickupTime >= MAX_DELIVERY_TIME_MINUTES) continue;
 
-            // Only proceed if volunteer can reach pickup within a reasonable time for the overall delivery window
-            if (volunteerPickupTime >= MAX_DELIVERY_TIME_MINUTES) {
-                continue; // This volunteer is too far for pickup alone
-            }
-
-            // Find nearby HungerSpots for this volunteer
             const potentialHungerSpots = await HungerSpot.aggregate([
                 {
                     $geoNear: {
                         near: { type: 'Point', coordinates: volunteer.location.coordinates },
-                        distanceField: 'distanceToVolunteer', // distance in meters
+                        distanceField: 'distanceToVolunteer',
                         spherical: true,
-                        maxDistance: 20000, // Example: 20 km radius from volunteer
-                        query: { capacity: { $gt: 0 } } // Ensure HungerSpot has capacity
+                        maxDistance: 20000,
+                        query: { capacity: { $gt: 0 } }
                     }
                 },
-                {
-                    $sort: { distanceToVolunteer: 1 }
-                },
-                {
-                    $limit: 5 // Limit to a few closest hunger spots
-                }
+                { $sort: { distanceToVolunteer: 1 } },
+                { $limit: 5 }
             ]);
 
             for (const hungerSpot of potentialHungerSpots) {
                 const volunteerDeliveryTime = (hungerSpot.distanceToVolunteer / AVERAGE_SPEED_METERS_PER_MINUTE) + DELIVERY_BUFFER_MINUTES;
                 const totalEstimatedTime = volunteerPickupTime + volunteerDeliveryTime;
 
-                if (totalEstimatedTime <= MAX_DELIVERY_TIME_MINUTES) {
-                    // This is a viable option. Check if it's the best so far.
-                    if (totalEstimatedTime < bestOverallTime) {
-                        bestOverallTime = totalEstimatedTime;
-                        assignedVolunteer = volunteer;
-                        assignedHungerSpot = hungerSpot;
-                        // We found a good candidate, but let's continue searching for an even better one
-                        // or you can break here if you want to assign to the first viable one found.
-                    }
+                if (totalEstimatedTime <= MAX_DELIVERY_TIME_MINUTES && totalEstimatedTime < bestOverallTime) {
+                    bestOverallTime = totalEstimatedTime;
+                    assignedVolunteer = volunteer;
+                    assignedHungerSpot = hungerSpot;
                 }
             }
         }
 
-        // 3. Assign if a suitable volunteer and HungerSpot are found
         if (assignedVolunteer && assignedHungerSpot) {
             newDonationRequest.assignedVolunteer = assignedVolunteer._id;
             newDonationRequest.deliveredTo = assignedHungerSpot._id;
-            newDonationRequest.status = 'accepted'; // Or 'pending-assignment' if you want a separate state before volunteer acceptance
+            newDonationRequest.status = 'accepted';
             await newDonationRequest.save();
 
-            // Create a log entry
             const assignmentLog = new VolunteerAssignmentLog({
                 volunteerId: assignedVolunteer._id,
                 donationId: newDonationRequest._id,
-                statusTimeline: { acceptedAt: new Date() } // Mark as accepted immediately
+                statusTimeline: { acceptedAt: new Date() }
             });
             await assignmentLog.save();
 
-            // Optional: Update volunteer's status to 'unavailable' or 'on-task'
             await User.findByIdAndUpdate(assignedVolunteer._id, { available: false });
+
+            // --- REAL-TIME NOTIFICATION ---
+            const io = req.app.get('io');
+            const volunteerSockets = req.app.get('volunteerSockets');
+            const volunteerSocketId = volunteerSockets[assignedVolunteer._id.toString()];
+            if (volunteerSocketId) {
+                io.to(volunteerSocketId).emit('newTask', {
+                    donationId: newDonationRequest._id,
+                    pickupAddress: pickupAddress,
+                    hungerSpot: assignedHungerSpot.name,
+                    estimatedTime: `${bestOverallTime.toFixed(2)} minutes`
+                });
+            }
 
             res.status(200).json({
                 message: 'Donation created and assigned successfully!',
@@ -139,25 +129,55 @@ exports.createDonation = async (req, res) => {
                 estimatedDeliveryTime: `${bestOverallTime.toFixed(2)} minutes`
             });
         } else {
-            // No suitable volunteer and hunger spot combination found within the time limit
-            // Optionally, you could mark the donation as 'unassigned' or 'requires manual review'
-            newDonationRequest.status = 'pending'; 
+            newDonationRequest.status = 'pending';
             await newDonationRequest.save();
             res.status(202).json({
-                message: 'Donation created, but no suitable volunteer or hunger spot found within 45 minutes. It will be reviewed manually.',
+                message: 'Donation created, but no volunteer found.',
                 donation: newDonationRequest
             });
         }
 
     } catch (error) {
         console.error('Error creating donation and assigning:', error);
-        // If an error occurs after newDonationRequest.save(), you might want to consider rolling back
-        // the donation creation if you were using transactions. For now, it will just remain in 'pending' or 'pending_manual_review'.
-        res.status(500).json({ message: 'Server Error during donation creation or assignment.' });
+        res.status(500).json({ message: 'Server Error' });
     }
 };
 
 
 
+exports.getTotalDeliveries = async (req, res) => {
+  try {
+    const count = await DonationRequest.countDocuments({ status: 'delivered' });
+    res.json({ totalDeliveries: count });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server Error' });
+  }
+};
 
+exports.getMyDonations = async (req, res) => {
+  try {
+    if (!req.user || !req.user._id) {
+      return res.status(401).json({ message: 'Not authorized' });
+    }
 
+    // 1. Get all assignments for this volunteer
+    const assignments = await VolunteerAssignmentLog.find({ volunteerId: req.user._id })
+      .select('donationId');
+
+    if (!assignments.length) {
+      return res.json([]); // No donations assigned
+    }
+
+    const donationIds = assignments.map(a => a.donationId);
+
+    // 2. Get donation details (with donor info populated if needed)
+    const donations = await DonationRequest.find({ _id: { $in: donationIds } })
+      .sort({ createdAt: -1 });
+
+    res.json(donations);
+  } catch (error) {
+    console.error('Error fetching my donations:', error);
+    res.status(500).json({ message: 'Server Error' });
+  }
+};

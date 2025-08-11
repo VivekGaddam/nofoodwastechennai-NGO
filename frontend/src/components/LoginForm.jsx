@@ -19,10 +19,13 @@ const LoginForm = () => {
     try {
       const response = await loginUser({ email, password });
       const userData = response.data;
+      const token = response.data.token;
+
 
       alert("Login successful!");
       localStorage.setItem('user', JSON.stringify(userData));
-
+      localStorage.setItem('token', token);
+      console.log(token);
       if (userData.role === 'admin') {
         window.location.href = '/admin-dashboard';
       } else if (userData.role === 'volunteer') {

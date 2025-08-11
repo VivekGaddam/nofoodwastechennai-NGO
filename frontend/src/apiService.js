@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_URL = 'http://localhost:5000/api'; // Assuming your backend runs on port 5000
+const API_URL = 'https://nofoodwastechennai-ngo.onrender.com/api'; // Assuming your backend runs on port 5000
 
 const apiService = axios.create({
   baseURL: API_URL,
@@ -8,6 +8,15 @@ const apiService = axios.create({
     'Content-Type': 'application/json',
   },
   withCredentials: true
+});
+apiService.interceptors.request.use((config) => {
+  const token = localStorage.getItem('token');
+  if (token) {
+    config.headers['Authorization'] = `Bearer ${token}`;
+  }
+  return config;
+}, (error) => {
+  return Promise.reject(error);
 });
 
 export const registerUser = (userData) => apiService.post('/auth/register', userData);
@@ -35,8 +44,12 @@ export const createHungerSpot = (hungerSpotData) => {
 export const getNearbyHungerSpots = (lat, lng) => apiService.get(`/hunger-spots/nearby?lat=${lat}&lng=${lng}`);
 
 export const getMyTasks = () => {
-  return apiService.get('/volunteer/tasks');
+  return apiService.get('/volunteers/tasks');
 };
+export const totalDeliveries = () => {
+  return apiService.get('/donations/total-deliveries');
+};
+
 export const acceptPickup = (id) => {
   return apiService.post(`/volunteer/donations/${id}/accept`);
 };

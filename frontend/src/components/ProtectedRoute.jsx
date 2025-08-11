@@ -1,10 +1,10 @@
-// src/components/ProtectedRoute.jsx
 import { Navigate } from 'react-router-dom';
 
 const ProtectedRoute = ({ allowedRoles, children }) => {
   const user = JSON.parse(localStorage.getItem('user'));
-
-  if (!user) {
+  const token = localStorage.getItem('token'); 
+  // Check if user object is missing OR does not have a valid role
+  if (!token) {
     return <Navigate to="/login" />;
   }
 

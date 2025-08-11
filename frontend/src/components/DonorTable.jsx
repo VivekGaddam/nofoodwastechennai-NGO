@@ -7,6 +7,7 @@ const getStatusColor = (status) => {
   switch (status) {
     case 'pending':
       return 'status-pending';
+    case 'accepted':
     case 'In Progress':
       return 'status-warning';
     case 'completed':
@@ -42,32 +43,46 @@ export default function DonorTable({ data }) {
             </tr>
           </thead>
           <tbody className="table-body">
-            {data.map((donor, index) => (
-              <motion.tr 
-                key={donor.id} 
-                className="table-row"
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.5, delay: index * 0.1 }}
-              >
-                <td className="table-cell">
-                  <div className="donor-name">{donor.name}</div>
-                </td>
-                <td className="table-cell">
-                  <span className={`status-badge ${getStatusColor(donor.status)}`}>
-                    {donor.status}
-                  </span>
-                </td>
-                <td className="table-cell">
-                  <div className="location-cell">
-                    <MapPin className="location-icon" />
-                    {donor.location}
-                  </div>
-                </td>
-                <td className="table-cell">{donor.food}</td>
-                <td className="table-cell">{donor.quantity}</td>
-              </motion.tr>
-            ))}
+            {data.map((donation, index) => {
+              const [lng, lat] = donation.location?.coordinates ?? [];
+              return (
+                <motion.tr 
+                  key={donation._id} 
+                  className="table-row"
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ duration: 0.5, delay: index * 0.1 }}
+                >
+                  <td className="table-cell">
+                    <div className="donor-name">{donation.donorName}</div>
+                  </td>
+                  <td className="table-cell">
+                    <span className={`status-badge ${getStatusColor(donation.status)}`}>
+                      {donation.status}
+                    </span>
+                  </td>
+                  <td className="table-cell">
+                    <div className="location-cell">
+                      <MapPin className="location-icon" />
+                      {lat && lng ? (
+                        <a
+                          href={`https://www.google.com/maps?q=${lat},${lng}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="location-link"
+                        >
+                          {donation.pickupAddress}
+                        </a>
+                      ) : (
+                        donation.pickupAddress
+                      )}
+                    </div>
+                  </td>
+                  <td className="table-cell">{donation.foodDescription}</td>
+                  <td className="table-cell">{donation.quantity}</td>
+                </motion.tr>
+              );
+            })}
           </tbody>
         </table>
       </div>
